@@ -9,6 +9,31 @@ Backend pour la plateforme d'automatisation de workflows sportifs.
 - **Validation**: Pydantic v2
 - **Gestionnaire de paquets**: uv
 
+### Match Info Tool
+Récupère les scores et informations des matchs terminés.
+- **Mots-clés déclencheurs** : "match", "score", "résultat"
+- **Variable d'environnement** : `ALL_SPORTS_API_KEY`
+- **Exemple de requête** : "Donne-moi le score du dernier match du PSG"
+- **Réponse type** :
+  ```json
+  {
+    "type": "match_info",
+    "sport": "football",
+    "team": "PSG",
+    "matches": [
+      {
+        "home_team": "PSG",
+        "away_team": "Marseille",
+        "home_score": 2,
+        "away_score": 1,
+        "date": "2024-01-10",
+        "league": "Ligue 1",
+        "status": "finished"
+      }
+    ]
+  }
+  ```
+
 ## Installation et Démarrage
 
 1. Assurez-vous d'avoir [uv](https://github.com/astral-sh/uv) installé.

@@ -20,7 +20,12 @@ class WorkflowExecutor:
             if tool:
                 # Exécution de l'outil
                 # On pourrait passer le contexte ou le résultat du node précédent ici
-                tool_output = tool.run(context)
+                # Fusionner les paramètres du nœud avec le contexte
+                # Les paramètres du nœud (extraits par LLM) sont prioritaires pour ce nœud
+                tool_input = context.copy()
+                tool_input.update(node.data)
+                
+                tool_output = tool.run(tool_input)
                 
                 results[node.id] = tool_output
                 execution_log.append({
@@ -30,7 +35,7 @@ class WorkflowExecutor:
                     "output": tool_output
                 })
                 
-                # Mise à jour du contexte (simplifié)
+                # Mise à jour du contexte global avec la sortie
                 context.update(tool_output)
             else:
                 execution_log.append({

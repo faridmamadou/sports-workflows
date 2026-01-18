@@ -2,6 +2,7 @@ import uuid
 from typing import List
 from app.models.workflow import Workflow, WorkflowNode, WorkflowEdge
 from app.services.tool_registry import tool_registry
+from app.services.llm_service import llm_service
 
 class WorkflowGenerator:
     def generate(self, sport: str, query: str) -> Workflow:
@@ -13,43 +14,32 @@ class WorkflowGenerator:
         edges: List[WorkflowEdge] = []
         
         # Logique de génération mockée basée sur des mots-clés
-        query_lower = query.lower()
-        
-        available_tools = tool_registry.list_tools()
-        previous_node_id = None
+        # Analyse de la requête par LLM
+        analysis = llm_service.analyze_query(query)
+        tool_name = analysis.get("tool")
+        parameters = analysis.get("parameters", {})
         
         y_pos = 0
         
-        for tool in available_tools:
-            # Vérifie si l'outil supporte le sport demandé
-            if sport in tool.supported_sports:
-                keyword_match = False
-                
-                # Mapping simple mot-clé -> outil
-                if tool.name == "NewsTool" and ("actualités" in query_lower or "news" in query_lower):
-                    keyword_match = True
-                elif tool.name == "TransfersTool" and ("transfert" in query_lower or "mercato" in query_lower):
-                    keyword_match = True
-                elif tool.name == "PerformanceTool" and ("stat" in query_lower or "performance" in query_lower or "résultat" in query_lower):
-                    keyword_match = True
-                
-                if keyword_match:
-                    node_id = str(uuid.uuid4())
-                    nodes.append(WorkflowNode(
-                        id=node_id,
-                        tool_id=tool.id,
-                        label=tool.name,
-                        position={"x": 250, "y": y_pos}
-                    ))
-                    y_pos += 100
-                    
-                    if previous_node_id:
-                        edges.append(WorkflowEdge(
-                            id=str(uuid.uuid4()),
-                            source=previous_node_id,
-                            target=node_id
-                        ))
-                    previous_node_id = node_id
+        if tool_name:
+            # Trouve l'outil correspondant dans le registre
+            # Note: Le LLM retourne "match_info", mais le registre utilise peut-être des IDs différents
+            # Dans notre cas, MatchInfoTool.name = "match_info", donc ça colle.
+            
+            tool = tool_registry.get_tool(tool_name)
+            if tool:
+                node_id = str(uuid.uuid4())
+                nodes.append(WorkflowNode(
+                    id=node_id,
+                    tool_id=tool.name,
+                    label=tool.name,
+                    position={"x": 250, "y": y_pos},
+                    data=parameters # Injection des paramètres extraits
+                ))
+        else:
+             # Fallback ou gestion d'erreur si aucune intention trouvée
+             # Pour l'instant, on ne fait rien ou on met un message
+             pass
 
         # Si aucun outil n'est trouvé, on met un outil par défaut (ex: News)
         if not nodes:

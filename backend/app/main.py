@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import FastAPI
 from app.core.config import settings
 from app.core.cors import setup_cors
@@ -21,4 +24,5 @@ def health_check():
 
 if __name__ == "__main__":
     import uvicorn
+    print(f"DEBUG: La clé est: {settings.ALL_SPORTS_API_KEY}", flush=True)
     uvicorn.run(app, host="0.0.0.0", port=8000)
