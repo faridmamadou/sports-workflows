@@ -5,7 +5,7 @@ export type WorkflowNode = {
     id: string;
     tool_id: string; // Changed from 'tool' to match backend Pydantic model
     label: string;   // Added label
-    position: { x: number; y: number }; // Added position
+    position?: { x: number; y: number }; // Made optional
     data: Record<string, any>; // Changed from 'params' to 'data'
 };
 

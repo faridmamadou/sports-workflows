@@ -11,43 +11,53 @@ export const mockWorkflow: Workflow = {
     nodes: [
         {
             id: "n1",
-            type: "context",
-            tool: "DetectSport",
-            params: { sport: "football" }
+            tool_id: "DetectSport",
+            label: "Detection du Sport",
+            position: { x: 50, y: 150 },
+            data: { sport: "football" }
         },
         {
             id: "n2",
-            type: "data",
-            tool: "GetWeeklyNews",
-            params: { team: "PSG" }
+            tool_id: "GetWeeklyNews",
+            label: "Actualités PSG",
+            position: { x: 350, y: 50 },
+            data: { team: "PSG" }
         },
         {
             id: "n3",
-            type: "data",
-            tool: "GetTransfers",
-            params: { team: "PSG" }
+            tool_id: "GetTransfers",
+            label: "Transferts PSG",
+            position: { x: 350, y: 150 },
+            data: { team: "PSG" }
         },
         {
             id: "n4",
-            type: "data",
-            tool: "GetPlayerStats",
-            params: { team: "PSG", limit: 5 }
+            tool_id: "GetPlayerStats",
+            label: "Stats Joueurs",
+            position: { x: 350, y: 250 },
+            data: { team: "PSG", limit: 5 }
         },
         {
             id: "n5",
-            type: "transform",
-            tool: "MergeResults"
+            tool_id: "MergeResults",
+            label: "Fusion des Résultats",
+            position: { x: 650, y: 150 },
+            data: {}
         },
         {
             id: "n6",
-            type: "output",
-            tool: "FormatResponse"
+            tool_id: "FormatResponse",
+            label: "Formatage Final",
+            position: { x: 950, y: 150 },
+            data: {}
         }
     ],
     edges: [
         { from: "n1", to: "n2" },
-        { from: "n2", to: "n3" },
-        { from: "n3", to: "n4" },
+        { from: "n1", to: "n3" },
+        { from: "n1", to: "n4" },
+        { from: "n2", to: "n5" },
+        { from: "n3", to: "n5" },
         { from: "n4", to: "n5" },
         { from: "n5", to: "n6" }
     ]

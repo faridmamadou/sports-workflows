@@ -7,18 +7,22 @@ import {
     useNodesState,
     useEdgesState,
     MarkerType,
+    useReactFlow,
+    ReactFlowProvider,
 } from "@xyflow/react";
 import type { Node, Edge } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import type { Workflow } from "../types/workflow";
-import { WorkflowNode } from "./WorkflowNode";
+import type { Workflow, WorkflowNode } from "../types/workflow";
+import { WorkflowNode as CustomNode } from "./WorkflowNode";
+import { type ToolDefinition } from "../data/tools";
 
 const nodeTypes = {
-    custom: WorkflowNode,
+    custom: CustomNode,
 };
 
 interface WorkflowCanvasProps {
     workflow: Workflow | null;
+    onWorkflowChange?: (workflow: Workflow) => void;
 }
 
 // Map tool_id to visual configuration
@@ -30,25 +34,45 @@ const getToolConfig = (tool_id: string): { icon: string; color: string; sublabel
         return { icon: "Play", color: "#10b981", sublabel: "Trigger" };
     }
 
-    // Brain / AI
+    // AI / Brain
     if (id.includes("llm") || id.includes("agent") || id.includes("router") || id.includes("brain")) {
         return { icon: "Brain", color: "#8b5cf6", sublabel: "AI Orchestrator" };
     }
 
-    // Tools
-    if (id.includes("match") || id.includes("sport") || id.includes("api")) {
-        return { icon: "Search", color: "#3b82f6", sublabel: "Data Retrieval" };
+    // New Specific Tools
+    if (id.includes("standings")) {
+        return { icon: "ListOrdered", color: "#f59e0b", sublabel: "League Table" };
     }
-    if (id.includes("weather") || id.includes("cloud")) {
-        return { icon: "Cloud", color: "#0ea5e9", sublabel: "Outer Tool" };
+    if (id.includes("topscorers") || id.includes("scorer")) {
+        return { icon: "Award", color: "#eab308", sublabel: "Top Players" };
     }
-    if (id.includes("calendar") || id.includes("odds")) {
-        return { icon: "Calendar", color: "#f59e0b", sublabel: "Schedules" };
+    if (id.includes("team_info") || id.includes("team")) {
+        return { icon: "Users", color: "#3b82f6", sublabel: "Team Details" };
+    }
+    if (id.includes("video") || id.includes("highlight")) {
+        return { icon: "Youtube", color: "#ef4444", sublabel: "Match Videos" };
     }
 
-    // Output
-    if (id.includes("output") || id.includes("result") || id.includes("end")) {
-        return { icon: "CheckCircle", color: "#64748b", sublabel: "Final Result" };
+    // Specific Tools
+    if (id.includes("news")) {
+        return { icon: "Newspaper", color: "#3b82f6", sublabel: "News Feed" };
+    }
+    if (id.includes("transfer")) {
+        return { icon: "ArrowLeftRight", color: "#8b5cf6", sublabel: "Market Updates" };
+    }
+    if (id.includes("stats") || id.includes("player")) {
+        return { icon: "BarChart3", color: "#f59e0b", sublabel: "Performance Data" };
+    }
+    if (id.includes("merge") || id.includes("join")) {
+        return { icon: "GitMerge", color: "#64748b", sublabel: "Data Joiner" };
+    }
+    if (id.includes("format") || id.includes("output")) {
+        return { icon: "FileText", color: "#10b981", sublabel: "Report Generator" };
+    }
+
+    // Tools
+    if (id.includes("match") || id.includes("sport") || id.includes("api")) {
+        return { icon: "Search", color: "#6366f1", sublabel: "Data Retrieval" };
     }
 
     return { icon: "Activity", color: "#64748b", sublabel: "Action" };
@@ -62,13 +86,14 @@ function workflowToReactFlow(workflow: Workflow): { nodes: Node[]; edges: Edge[]
         return {
             id: node.id,
             type: "custom",
-            position: { x: index * 300 + 50, y: 150 }, // Horizontal layout
+            position: node.position || { x: index * 300 + 50, y: 150 },
             data: {
                 label: node.label,
                 tool_id: node.tool_id,
                 icon: config.icon,
                 color: config.color,
                 sublabel: config.sublabel,
+                ...node.data, // Pydantic data -> RF data
             },
         };
     });
@@ -92,10 +117,11 @@ function workflowToReactFlow(workflow: Workflow): { nodes: Node[]; edges: Edge[]
     return { nodes, edges };
 }
 
-export function WorkflowCanvas({ workflow }: WorkflowCanvasProps) {
+function WorkflowCanvasInner({ workflow, onWorkflowChange }: WorkflowCanvasProps) {
     const reactFlowData = workflow ? workflowToReactFlow(workflow) : { nodes: [], edges: [] };
     const [nodes, setNodes, onNodesChange] = useNodesState(reactFlowData.nodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState(reactFlowData.edges);
+    const { screenToFlowPosition } = useReactFlow();
 
     // Sync state when workflow prop changes
     useEffect(() => {
@@ -114,15 +140,60 @@ export function WorkflowCanvas({ workflow }: WorkflowCanvasProps) {
         console.log("Connection non autorisée pour le moment");
     }, []);
 
-    if (!workflow) {
-        return (
-            <div className="h-full flex items-center justify-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                <p className="text-gray-500 text-lg">
-                    👆 Entrez une requête et générez un workflow pour le visualiser
-                </p>
-            </div>
-        );
-    }
+    const onDragOver = useCallback((event: React.DragEvent) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+    }, []);
+
+    const onDrop = useCallback(
+        (event: React.DragEvent) => {
+            event.preventDefault();
+
+            const data = event.dataTransfer.getData("application/reactflow");
+            if (!data) return;
+
+            const tool: ToolDefinition = JSON.parse(data);
+            const position = screenToFlowPosition({
+                x: event.clientX,
+                y: event.clientY,
+            });
+
+            const newNodeId = `node_${Math.random().toString(36).substr(2, 9)}`;
+
+            const newNode: Node = {
+                id: newNodeId,
+                type: "custom",
+                position,
+                data: {
+                    label: tool.label,
+                    tool_id: tool.tool_id,
+                    icon: tool.icon,
+                    color: tool.color,
+                    sublabel: tool.category,
+                    ...tool.defaultData,
+                },
+            };
+
+            setNodes((nds) => nds.concat(newNode));
+
+            // Sync back to workflow if needed
+            if (workflow && onWorkflowChange) {
+                const newWorkflowNode: WorkflowNode = {
+                    id: newNodeId,
+                    tool_id: tool.tool_id,
+                    label: tool.label,
+                    position,
+                    data: tool.defaultData,
+                };
+
+                onWorkflowChange({
+                    ...workflow,
+                    nodes: [...workflow.nodes, newWorkflowNode],
+                });
+            }
+        },
+        [screenToFlowPosition, setNodes, workflow, onWorkflowChange]
+    );
 
     return (
         <div className="h-full bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
@@ -132,6 +203,8 @@ export function WorkflowCanvas({ workflow }: WorkflowCanvasProps) {
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
                 onConnect={onConnect}
+                onDrop={onDrop}
+                onDragOver={onDragOver}
                 nodeTypes={nodeTypes}
                 fitView
                 nodesDraggable={true}
@@ -142,12 +215,24 @@ export function WorkflowCanvas({ workflow }: WorkflowCanvasProps) {
                 <Controls />
                 <MiniMap
                     nodeColor={(node) => {
-                        const workflowNode = workflow.nodes.find((n) => n.id === node.id);
+                        // Find node in local state first for manually added nodes
+                        const localNode = nodes.find(n => n.id === node.id);
+                        if (localNode?.data?.color) return localNode.data.color as string;
+
+                        const workflowNode = workflow?.nodes.find((n) => n.id === node.id);
                         if (!workflowNode) return "#6b7280";
                         return getToolConfig(workflowNode.tool_id).color;
                     }}
                 />
             </ReactFlow>
         </div>
+    );
+}
+
+export function WorkflowCanvas(props: WorkflowCanvasProps) {
+    return (
+        <ReactFlowProvider>
+            <WorkflowCanvasInner {...props} />
+        </ReactFlowProvider>
     );
 }

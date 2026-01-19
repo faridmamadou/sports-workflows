@@ -1,15 +1,17 @@
 import { useState } from "react";
 import type { SportType, Workflow } from "../types/workflow";
+import { mockWorkflow } from "../data/mockWorkflow";
 import { SportSelector } from "../components/SportSelector";
 import { QueryInput } from "../components/QueryInput";
 import { WorkflowCanvas } from "../components/WorkflowCanvas";
 import { WorkflowResult } from "../components/WorkflowResult";
+import { Toolbox } from "../components/Toolbox";
 import { ApiClient } from "../api/client";
 
 export function Home() {
     const [sport, setSport] = useState<SportType>("football");
     const [query, setQuery] = useState("");
-    const [workflow, setWorkflow] = useState<Workflow | null>(null);
+    const [workflow, setWorkflow] = useState<Workflow | null>(mockWorkflow);
     const [loading, setLoading] = useState(false);
     const [executionResult, setExecutionResult] = useState<any>(null);
     const [executing, setExecuting] = useState(false);
@@ -69,7 +71,12 @@ export function Home() {
             </header>
 
             {/* Main Content */}
-            <main className="mx-auto max-w-7xl px-6 py-8">
+            <main className="mx-auto max-w-7xl px-6 py-8 space-y-8">
+                {/* Horizontal Toolbox Section */}
+                <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4 shadow-sm backdrop-blur-sm">
+                    <Toolbox />
+                </div>
+
                 <div className="grid grid-cols-12 gap-6">
                     {/* Left Sidebar - Controls */}
                     <div className="col-span-12 lg:col-span-4 space-y-6">
@@ -109,19 +116,27 @@ export function Home() {
                                         </span>
                                     </div>
                                 </div>
-                                <div className="mt-4 pt-4 border-t border-slate-100">
+                                <div className="mt-4 pt-4 border-t border-slate-100 flex gap-2">
                                     <button
                                         onClick={handleExecute}
                                         disabled={executing}
-                                        className="w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                                        className="flex-1 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 transition-colors disabled:opacity-50"
                                     >
                                         {executing ? "Executing..." : "Run Workflow"}
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setWorkflow(null);
+                                            setExecutionResult(null);
+                                        }}
+                                        className="rounded-md bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 hover:text-slate-900 transition-colors"
+                                        title="Effacer le workflow"
+                                    >
+                                        Effacer
                                     </button>
                                 </div>
                             </div>
                         )}
-
-
                     </div>
 
                     {/* Right Content - Workflow Canvas */}

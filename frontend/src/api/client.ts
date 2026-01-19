@@ -1,6 +1,6 @@
 import type { Workflow, SportType } from "../types/workflow";
 
-const API_BASE_URL = "http://localhost:8000";
+const API_BASE_URL = "https://sports-workflows.onrender.com";
 
 export class ApiClient {
     static async generateWorkflow(sport: SportType, query: string): Promise<Workflow> {
