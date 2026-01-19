@@ -3,16 +3,46 @@ import type { SportType, Workflow } from "../types/workflow";
 import { SportSelector } from "../components/SportSelector";
 import { QueryInput } from "../components/QueryInput";
 import { WorkflowCanvas } from "../components/WorkflowCanvas";
-import { mockWorkflow } from "../data/mockWorkflow";
+import { WorkflowResult } from "../components/WorkflowResult";
+import { ApiClient } from "../api/client";
 
 export function Home() {
     const [sport, setSport] = useState<SportType>("football");
     const [query, setQuery] = useState("");
     const [workflow, setWorkflow] = useState<Workflow | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [executionResult, setExecutionResult] = useState<any>(null);
+    const [executing, setExecuting] = useState(false);
 
-    const handleGenerate = () => {
-        console.log("Generating workflow for:", { sport, query });
-        setWorkflow(mockWorkflow);
+    const handleGenerate = async () => {
+        setLoading(true);
+        setExecutionResult(null);
+        try {
+            console.log("Generating workflow for:", { sport, query });
+            const generatedWorkflow = await ApiClient.generateWorkflow(sport, query);
+            setWorkflow(generatedWorkflow);
+        } catch (error) {
+            console.error("Error generating workflow:", error);
+            alert("Failed to generate workflow. See console for details.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleExecute = async () => {
+        if (!workflow) return;
+        setExecuting(true);
+        setExecutionResult(null);
+        try {
+            console.log("Executing workflow:", workflow.id);
+            const result = await ApiClient.executeWorkflow(workflow);
+            setExecutionResult(result);
+        } catch (error) {
+            console.error("Error executing workflow:", error);
+            alert("Failed to execute workflow. See console for details.");
+        } finally {
+            setExecuting(false);
+        }
     };
 
     return (
@@ -32,9 +62,6 @@ export function Home() {
                         <div className="flex items-center gap-3">
                             <button className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors">
                                 Documentation
-                            </button>
-                            <button className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-800 transition-colors">
-                                Sign In
                             </button>
                         </div>
                     </div>
@@ -58,6 +85,7 @@ export function Home() {
                                     onChange={setQuery}
                                     onGenerate={handleGenerate}
                                 />
+                                {loading && <p className="text-sm text-blue-600">Generating...</p>}
                             </div>
                         </div>
 
@@ -70,7 +98,7 @@ export function Home() {
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between text-sm">
                                         <span className="text-slate-600">Workflow ID</span>
-                                        <span className="font-mono text-xs text-slate-900">
+                                        <span className="font-mono text-xs text-slate-900 truncate max-w-[150px]" title={workflow.id}>
                                             {workflow.id}
                                         </span>
                                     </div>
@@ -80,40 +108,20 @@ export function Home() {
                                             {workflow.nodes.length}
                                         </span>
                                     </div>
-                                    <div className="flex items-center justify-between text-sm">
-                                        <span className="text-slate-600">Connections</span>
-                                        <span className="font-semibold text-slate-900">
-                                            {workflow.edges.length}
-                                        </span>
-                                    </div>
                                 </div>
-
-                                {/* Node Types Legend */}
-                                <div className="mt-5 pt-4 border-t border-slate-200">
-                                    <h4 className="text-xs font-semibold text-slate-700 mb-3 uppercase tracking-wide">
-                                        Node Types
-                                    </h4>
-                                    <div className="space-y-2">
-                                        <div className="flex items-center gap-2.5">
-                                            <div className="w-3 h-3 rounded-sm bg-blue-600"></div>
-                                            <span className="text-xs text-slate-600">Context</span>
-                                        </div>
-                                        <div className="flex items-center gap-2.5">
-                                            <div className="w-3 h-3 rounded-sm bg-emerald-600"></div>
-                                            <span className="text-xs text-slate-600">Data</span>
-                                        </div>
-                                        <div className="flex items-center gap-2.5">
-                                            <div className="w-3 h-3 rounded-sm bg-amber-600"></div>
-                                            <span className="text-xs text-slate-600">Transform</span>
-                                        </div>
-                                        <div className="flex items-center gap-2.5">
-                                            <div className="w-3 h-3 rounded-sm bg-purple-600"></div>
-                                            <span className="text-xs text-slate-600">Output</span>
-                                        </div>
-                                    </div>
+                                <div className="mt-4 pt-4 border-t border-slate-100">
+                                    <button
+                                        onClick={handleExecute}
+                                        disabled={executing}
+                                        className="w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                                    >
+                                        {executing ? "Executing..." : "Run Workflow"}
+                                    </button>
                                 </div>
                             </div>
                         )}
+
+
                     </div>
 
                     {/* Right Content - Workflow Canvas */}
@@ -123,6 +131,13 @@ export function Home() {
                         </div>
                     </div>
                 </div>
+
+                {/* Execution Results - Full Width */}
+                {executionResult && (
+                    <div className="mt-8">
+                        <WorkflowResult result={executionResult.results} />
+                    </div>
+                )}
             </main>
         </div>
     );

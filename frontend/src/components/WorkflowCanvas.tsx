@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import {
     ReactFlow,
     Background,
@@ -11,42 +11,67 @@ import {
 import type { Node, Edge } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import type { Workflow } from "../types/workflow";
+import { WorkflowNode } from "./WorkflowNode";
+
+const nodeTypes = {
+    custom: WorkflowNode,
+};
 
 interface WorkflowCanvasProps {
     workflow: Workflow | null;
 }
 
-// Couleurs par type de nœud
-const nodeColors: Record<string, string> = {
-    context: "#3b82f6", // bleu
-    data: "#10b981", // vert
-    transform: "#f59e0b", // orange
-    output: "#8b5cf6", // violet
+// Map tool_id to visual configuration
+const getToolConfig = (tool_id: string): { icon: string; color: string; sublabel: string } => {
+    const id = tool_id.toLowerCase();
+
+    // Start / Input
+    if (id.includes("start") || id.includes("query") || id.includes("input")) {
+        return { icon: "Play", color: "#10b981", sublabel: "Trigger" };
+    }
+
+    // Brain / AI
+    if (id.includes("llm") || id.includes("agent") || id.includes("router") || id.includes("brain")) {
+        return { icon: "Brain", color: "#8b5cf6", sublabel: "AI Orchestrator" };
+    }
+
+    // Tools
+    if (id.includes("match") || id.includes("sport") || id.includes("api")) {
+        return { icon: "Search", color: "#3b82f6", sublabel: "Data Retrieval" };
+    }
+    if (id.includes("weather") || id.includes("cloud")) {
+        return { icon: "Cloud", color: "#0ea5e9", sublabel: "Outer Tool" };
+    }
+    if (id.includes("calendar") || id.includes("odds")) {
+        return { icon: "Calendar", color: "#f59e0b", sublabel: "Schedules" };
+    }
+
+    // Output
+    if (id.includes("output") || id.includes("result") || id.includes("end")) {
+        return { icon: "CheckCircle", color: "#64748b", sublabel: "Final Result" };
+    }
+
+    return { icon: "Activity", color: "#64748b", sublabel: "Action" };
 };
 
 // Convertir le workflow en nodes et edges React Flow
 function workflowToReactFlow(workflow: Workflow): { nodes: Node[]; edges: Edge[] } {
-    const nodes: Node[] = workflow.nodes.map((node, index) => ({
-        id: node.id,
-        type: "default",
-        position: { x: 250, y: index * 100 + 50 },
-        data: {
-            label: (
-                <div className="text-center">
-                    <div className="font-semibold text-sm">{node.tool}</div>
-                    <div className="text-xs text-gray-500">{node.type}</div>
-                </div>
-            ),
-        },
-        style: {
-            backgroundColor: nodeColors[node.type] || "#6b7280",
-            color: "white",
-            border: "2px solid white",
-            borderRadius: "8px",
-            padding: "12px 20px",
-            minWidth: "180px",
-        },
-    }));
+    const nodes: Node[] = workflow.nodes.map((node, index) => {
+        const config = getToolConfig(node.tool_id);
+
+        return {
+            id: node.id,
+            type: "custom",
+            position: { x: index * 300 + 50, y: 150 }, // Horizontal layout
+            data: {
+                label: node.label,
+                tool_id: node.tool_id,
+                icon: config.icon,
+                color: config.color,
+                sublabel: config.sublabel,
+            },
+        };
+    });
 
     const edges: Edge[] = workflow.edges.map((edge, index) => ({
         id: `e-${edge.from}-${edge.to}-${index}`,
@@ -69,8 +94,20 @@ function workflowToReactFlow(workflow: Workflow): { nodes: Node[]; edges: Edge[]
 
 export function WorkflowCanvas({ workflow }: WorkflowCanvasProps) {
     const reactFlowData = workflow ? workflowToReactFlow(workflow) : { nodes: [], edges: [] };
-    const [nodes, , onNodesChange] = useNodesState(reactFlowData.nodes);
-    const [edges, , onEdgesChange] = useEdgesState(reactFlowData.edges);
+    const [nodes, setNodes, onNodesChange] = useNodesState(reactFlowData.nodes);
+    const [edges, setEdges, onEdgesChange] = useEdgesState(reactFlowData.edges);
+
+    // Sync state when workflow prop changes
+    useEffect(() => {
+        if (workflow) {
+            const { nodes: newNodes, edges: newEdges } = workflowToReactFlow(workflow);
+            setNodes(newNodes);
+            setEdges(newEdges);
+        } else {
+            setNodes([]);
+            setEdges([]);
+        }
+    }, [workflow, setNodes, setEdges]);
 
     const onConnect = useCallback(() => {
         // Pour l'instant, on ne permet pas de connecter manuellement
@@ -95,6 +132,7 @@ export function WorkflowCanvas({ workflow }: WorkflowCanvasProps) {
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
                 onConnect={onConnect}
+                nodeTypes={nodeTypes}
                 fitView
                 nodesDraggable={true}
                 nodesConnectable={false}
@@ -105,7 +143,8 @@ export function WorkflowCanvas({ workflow }: WorkflowCanvasProps) {
                 <MiniMap
                     nodeColor={(node) => {
                         const workflowNode = workflow.nodes.find((n) => n.id === node.id);
-                        return nodeColors[workflowNode?.type || ""] || "#6b7280";
+                        if (!workflowNode) return "#6b7280";
+                        return getToolConfig(workflowNode.tool_id).color;
                     }}
                 />
             </ReactFlow>

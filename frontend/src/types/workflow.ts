@@ -3,9 +3,10 @@
  */
 export type WorkflowNode = {
     id: string;
-    type: string;
-    tool: string;
-    params?: Record<string, any>;
+    tool_id: string; // Changed from 'tool' to match backend Pydantic model
+    label: string;   // Added label
+    position: { x: number; y: number }; // Added position
+    data: Record<string, any>; // Changed from 'params' to 'data'
 };
 
 /**
