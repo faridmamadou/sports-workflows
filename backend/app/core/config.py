@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     CORS_ORIGINS: list[str] = [
         "http://localhost:5173", # Frontend Vite
         "http://localhost:3000",
-        "https://sports-workflows.vercel.app/"
+        "https://sports-workflows.vercel.app"
     ]
     ALL_SPORTS_API_KEY: str
     GROQ_API_KEY: str
