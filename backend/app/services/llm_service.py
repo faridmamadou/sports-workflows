@@ -20,16 +20,36 @@ class LLMService:
         Tu es un assistant expert en sports. Ta tâche est d'analyser la demande de l'utilisateur pour extraire l'intention et les entités structurées pour une API de sports.
         
         Les outils disponibles sont :
-        - match_info: pour les scores, résultats, détails d'un match terminé. Paramètres: sport (str), team (str), date (str YYYY-MM-DD, optionnel).
+        - match_info: pour les scores, résultats, détails d'un match terminé. 
+        - standings: pour obtenir le classement d'une ligue (nécessite league ou league_id).
+        - topscorers: pour obtenir les meilleurs buteurs d'une ligue (nécessite league ou league_id).
+        - team_info: pour obtenir l'effectif et les détails d'une équipe (nécessite team ou team_id).
+        - videos: pour obtenir les highlights d'un match (nécessite match_id).
         
-        Si la demande concerne un match, retourne un JSON avec :
+        Paramètres possibles pour match_info:
+        - sport (str): ex: "football".
+        - team (str): Nom de l'équipe principale.
+        - opponent (str): Nom de l'équipe adverse (pour les face-à-face).
+        - league (str): Nom de la ligue/compétition (ex: "Premier League").
+        - date (str YYYY-MM-DD): Date précise.
+        - season (int): Année de la saison (ex: 2019).
+        - details (list[str]): Liste de détails demandés (ex: ["stats", "lineups"]).
+        
+        Paramètres pour standings / topscorers:
+        - league (str): Nom de la ligue.
+        - league_id (str, optionnel).
+        
+        Paramètres pour team_info:
+        - team (str): Nom de l'équipe.
+        - team_id (str, optionnel).
+        
+        Paramètres pour videos:
+        - match_id (str, obligatoire).
+        
+        Structure du JSON de réponse :
         {
-            "tool": "match_info",
-            "parameters": {
-                "sport": "football", // ou autre sport détecté
-                "team": "Nom de l'équipe",
-                "date": "YYYY-MM-DD" // ou null si non spécifié
-            }
+            "tool": "name_of_tool",
+            "parameters": { ... }
         }
         
         Si aucune intention claire ne correspond, retourne {"tool": null}.

@@ -4,6 +4,10 @@ from app.tools.news_tool import NewsTool
 from app.tools.transfers_tool import TransfersTool
 from app.tools.performance_tool import PerformanceTool
 from app.tools.match_info_tool import MatchInfoTool
+from app.tools.standings_tool import StandingsTool
+from app.tools.topscorers_tool import TopScorersTool
+from app.tools.team_info_tool import TeamInfoTool
+from app.tools.videos_tool import VideosTool
 from app.models.tool import ToolInfo
 
 class ToolRegistry:
@@ -16,6 +20,10 @@ class ToolRegistry:
         self.register_tool(TransfersTool())
         self.register_tool(PerformanceTool())
         self.register_tool(MatchInfoTool())
+        self.register_tool(StandingsTool())
+        self.register_tool(TopScorersTool())
+        self.register_tool(TeamInfoTool())
+        self.register_tool(VideosTool())
 
     def register_tool(self, tool: BaseTool):
         self._tools[tool.name] = tool
