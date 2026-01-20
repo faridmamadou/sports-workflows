@@ -1,0 +1,1 @@
+{"id":"26e98c9d-7353-4f5d-aca4-b3417e04ebb7","sport":"football","query":"Donne moi les actus et le classement du PSG","nodes":[{"id":"1aad412c-e29a-4cb0-a1d8-6ec5f5b790d8","tool_id":"standings","label":"standings","position":{"x":250.0,"y":0.0},"data":{"league":"Ligue 1"}}],"edges":[]}

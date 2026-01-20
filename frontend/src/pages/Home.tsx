@@ -8,7 +8,11 @@ import { WorkflowResult } from "../components/WorkflowResult";
 import { Toolbox } from "../components/Toolbox";
 import { ApiClient } from "../api/client";
 
-export function Home() {
+interface HomeProps {
+    onOpenDocs?: () => void;
+}
+
+export function Home({ onOpenDocs }: HomeProps) {
     const [sport, setSport] = useState<SportType>("football");
     const [query, setQuery] = useState("");
     const [workflow, setWorkflow] = useState<Workflow | null>(mockWorkflow);
@@ -62,7 +66,10 @@ export function Home() {
                             </p>
                         </div>
                         <div className="flex items-center gap-3">
-                            <button className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors">
+                            <button
+                                onClick={onOpenDocs}
+                                className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors"
+                            >
                                 Documentation
                             </button>
                         </div>
